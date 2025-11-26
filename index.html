@@ -61,6 +61,9 @@
 
     <div class="stars"></div>
 
+    <!-- Error Log Display (Untuk Diagnosa) -->
+    <div id="error-log" class="hidden absolute top-2 left-2 right-2 z-50 bg-red-900/90 text-red-200 text-xs p-2 rounded border border-red-500 font-mono whitespace-pre-wrap"></div>
+
     <!-- LAYAR MENU UTAMA -->
     <div id="menu-screen" class="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 bg-slate-900/90 backdrop-blur-md">
         <div class="text-6xl mb-4 animate-bounce">🚀</div>
@@ -184,6 +187,14 @@
     </div>
 
     <script>
+        // Global Error Handler
+        window.onerror = function(message, source, lineno, colno, error) {
+            const errorLog = document.getElementById('error-log');
+            errorLog.textContent = `Error: ${message}\nLine: ${lineno}`;
+            errorLog.classList.remove('hidden');
+            return false;
+        };
+
         let currentMode = 'tambah';
         let score = 0;
         let correctCount = 0;
@@ -195,76 +206,75 @@
         let currentQuestion = {};
         let currentInput = "";
         
-        // Audio Context (Safe Initialization)
         let audioCtx;
         const synth = window.speechSynthesis;
         let voiceIndo = null;
         let voiceEng = null;
 
-        const praises = [
-            "HEBAT!", "LUAR BIASA!", "MANTAP!", "KEREN!", 
-            "PINTAR!", "GOOD JOB!", "AWESOME!", "GREAT!", 
-            "WOW!", "SUPER!", "JAGOAN!"
-        ];
+        const praises = ["HEBAT!", "LUAR BIASA!", "MANTAP!", "KEREN!", "PINTAR!", "GOOD JOB!", "WOW!", "SUPER!"];
 
+        // Initialize Audio Safe Mode
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const voices = synth.getVoices();
+                voiceIndo = voices.find(v => v.lang.includes('id-ID') || v.lang.includes('ind'));
+                voiceEng = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
+            } catch (e) {
+                console.log("Audio init failed (minor issue):", e);
             }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            
-            // Init Voices
-            const voices = synth.getVoices();
-            voiceIndo = voices.find(v => v.lang.includes('id-ID') || v.lang.includes('ind'));
-            voiceEng = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
+        }
+        
+        // Try init voices early
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = initAudio;
         }
 
         function playSound(type) {
             if (!audioCtx) return;
-            
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            
-            const now = audioCtx.currentTime;
-            
-            if (type === 'correct') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(523.25, now); // C5
-                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
-                osc.start(now); osc.stop(now + 0.2);
-            } else if (type === 'wrong') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, now);
-                osc.frequency.linearRampToValueAtTime(100, now + 0.3);
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
-                osc.start(now); osc.stop(now + 0.3);
-            } else if (type === 'click') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, now);
-                gain.gain.setValueAtTime(0.05, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-                osc.start(now); osc.stop(now + 0.05);
-            }
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now); osc.stop(now + 0.2);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
+                } else if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now); osc.stop(now + 0.05);
+                }
+            } catch (e) { console.log("Sound error:", e); }
         }
 
         function speak(text) {
-            const u = new SpeechSynthesisUtterance(text);
-            if (['Good Job!', 'Awesome!', 'Great!', 'Super!'].includes(text) && voiceEng) {
-                u.voice = voiceEng;
-                u.lang = 'en-US';
-            } else if (voiceIndo) {
-                u.voice = voiceIndo;
+            try {
+                const u = new SpeechSynthesisUtterance(text);
+                if (voiceIndo) u.voice = voiceIndo;
                 u.lang = 'id-ID';
-            }
-            u.rate = 1.2; u.pitch = 1.2; u.volume = 1.0;
-            synth.speak(u);
+                u.rate = 1.2; u.pitch = 1.2; u.volume = 1.0;
+                synth.speak(u);
+            } catch (e) { console.log("Speech error:", e); }
         }
 
         function showPraise() {
@@ -280,30 +290,29 @@
         }
 
         function startGame(mode) {
+            // Safe start sequence
             try {
-                initAudio(); // Initialize audio on user interaction
-                
-                currentMode = mode;
-                score = 0;
-                correctCount = 0;
-                wrongCount = 0;
-                streak = 0;
-                level = 1;
-                timeLeft = 300;
-                currentInput = "";
-                
-                document.getElementById('menu-screen').classList.add('hidden');
-                document.getElementById('game-screen').classList.remove('hidden');
-                document.getElementById('game-screen').classList.add('flex');
-                document.getElementById('game-over-screen').classList.add('hidden');
-                
-                updateUI();
-                nextQuestion(); // Generates question first
-                startTimer();
-            } catch (e) {
-                console.error("Error starting game:", e);
-                alert("Terjadi kesalahan saat memulai game. Silakan refresh.");
-            }
+                initAudio(); // Try to init audio on click
+            } catch (e) {}
+
+            currentMode = mode;
+            score = 0;
+            correctCount = 0;
+            wrongCount = 0;
+            streak = 0;
+            level = 1;
+            timeLeft = 300;
+            currentInput = "";
+            
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('flex');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            
+            // Logic order important
+            updateUI();
+            nextQuestion(); 
+            startTimer();
         }
 
         function showMenu() {
@@ -323,6 +332,7 @@
             timerInterval = setInterval(() => {
                 timeLeft--;
                 document.getElementById('timer-display').textContent = timeLeft;
+                
                 if (timeLeft <= 10) {
                     document.getElementById('timer-display').classList.add('text-red-500', 'animate-pulse');
                 } else {
@@ -341,9 +351,9 @@
             document.getElementById('final-correct').textContent = correctCount;
             document.getElementById('final-wrong').textContent = wrongCount;
             document.getElementById('game-over-screen').classList.remove('hidden');
-            if (typeof confetti === 'function') {
+            try {
                 confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-            }
+            } catch (e) {}
             speak("Misi Selesai! Skor kamu " + score);
         }
 
@@ -395,46 +405,33 @@
 
         function nextQuestion() {
             currentQuestion = generateQuestion();
-            const qText = document.getElementById('question-text');
-            if(qText) qText.textContent = `${currentQuestion.a} ${currentQuestion.op} ${currentQuestion.b}`;
-            
+            document.getElementById('question-text').textContent = `${currentQuestion.a} ${currentQuestion.op} ${currentQuestion.b}`;
             currentInput = "";
-            const ansDisplay = document.getElementById('answer-display');
-            if(ansDisplay) {
-                ansDisplay.textContent = "?";
-                ansDisplay.classList.remove('text-white');
-                ansDisplay.classList.add('text-cyan-300');
-            }
+            document.getElementById('answer-display').textContent = "?";
+            document.getElementById('answer-display').classList.remove('text-white');
+            document.getElementById('answer-display').classList.add('text-cyan-300');
             
             const container = document.getElementById('question-container');
-            if(container) {
-                container.classList.remove('pop-in');
-                void container.offsetWidth;
-                container.classList.add('pop-in');
-            }
+            container.classList.remove('pop-in');
+            void container.offsetWidth;
+            container.classList.add('pop-in');
         }
 
         function inputNum(num) {
             if (currentInput.length < 4) {
                 currentInput += num;
-                const el = document.getElementById('answer-display');
-                if(el) {
-                    el.textContent = currentInput;
-                    el.classList.add('text-white');
-                    el.classList.remove('text-cyan-300');
-                }
+                document.getElementById('answer-display').textContent = currentInput;
+                document.getElementById('answer-display').classList.add('text-white');
+                document.getElementById('answer-display').classList.remove('text-cyan-300');
                 playSound('click');
             }
         }
 
         function clearEntry() {
             currentInput = "";
-            const el = document.getElementById('answer-display');
-            if(el) {
-                el.textContent = "?";
-                el.classList.remove('text-white');
-                el.classList.add('text-cyan-300');
-            }
+            document.getElementById('answer-display').textContent = "?";
+            document.getElementById('answer-display').classList.remove('text-white');
+            document.getElementById('answer-display').classList.add('text-cyan-300');
             playSound('click');
         }
 
@@ -445,6 +442,7 @@
             const container = document.getElementById('game-screen');
             
             if (userAns === currentQuestion.ans) {
+                // BENAR
                 playSound('correct');
                 showPraise();
                 score += 10 + (streak * 2);
@@ -464,6 +462,7 @@
                 animateRocket();
                 setTimeout(nextQuestion, 800); 
             } else {
+                // SALAH
                 playSound('wrong');
                 streak = 0;
                 wrongCount++;
