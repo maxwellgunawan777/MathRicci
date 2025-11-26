@@ -190,30 +190,69 @@
         let wrongCount = 0;
         let streak = 0;
         let level = 1;
-        let timeLeft = 300; // WAKTU AWAL 300 DETIK
+        let timeLeft = 300;
         let timerInterval;
         let currentQuestion = {};
         let currentInput = "";
         
-        // Daftar Kata Pujian
+        // Audio Context (Safe Initialization)
+        let audioCtx;
+        const synth = window.speechSynthesis;
+        let voiceIndo = null;
+        let voiceEng = null;
+
         const praises = [
             "HEBAT!", "LUAR BIASA!", "MANTAP!", "KEREN!", 
             "PINTAR!", "GOOD JOB!", "AWESOME!", "GREAT!", 
             "WOW!", "SUPER!", "JAGOAN!"
         ];
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const synth = window.speechSynthesis;
-
-        let voiceIndo = null;
-        let voiceEng = null;
-        function initVoice() {
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            // Init Voices
             const voices = synth.getVoices();
             voiceIndo = voices.find(v => v.lang.includes('id-ID') || v.lang.includes('ind'));
             voiceEng = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
         }
-        initVoice();
-        if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = initVoice;
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            const now = audioCtx.currentTime;
+            
+            if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.start(now); osc.stop(now + 0.05);
+            }
+        }
 
         function speak(text) {
             const u = new SpeechSynthesisUtterance(text);
@@ -224,77 +263,47 @@
                 u.voice = voiceIndo;
                 u.lang = 'id-ID';
             }
-            u.rate = 1.2; 
-            u.pitch = 1.2; 
-            u.volume = 1.0;
+            u.rate = 1.2; u.pitch = 1.2; u.volume = 1.0;
             synth.speak(u);
-        }
-        
-        function playSound(type) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            
-            if (type === 'correct') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-            } else if (type === 'wrong') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
-                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
-            } else if (type === 'click') {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
-            }
         }
 
         function showPraise() {
             const praiseText = praises[Math.floor(Math.random() * praises.length)];
             const overlay = document.getElementById('praise-overlay');
-            
             overlay.textContent = praiseText;
             overlay.classList.remove('hidden');
             overlay.classList.remove('praise-anim');
             void overlay.offsetWidth; 
             overlay.classList.add('praise-anim');
-            
             speak(praiseText);
-            
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-            }, 1000);
+            setTimeout(() => overlay.classList.add('hidden'), 1000);
         }
 
         function startGame(mode) {
-            currentMode = mode;
-            score = 0;
-            correctCount = 0;
-            wrongCount = 0;
-            streak = 0;
-            level = 1;
-            timeLeft = 300; // RESET WAKTU KE 300 DETIK
-            currentInput = "";
-            
-            document.getElementById('menu-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            document.getElementById('game-screen').classList.add('flex');
-            document.getElementById('game-over-screen').classList.add('hidden');
-            
-            updateUI();
-            nextQuestion();
-            startTimer();
+            try {
+                initAudio(); // Initialize audio on user interaction
+                
+                currentMode = mode;
+                score = 0;
+                correctCount = 0;
+                wrongCount = 0;
+                streak = 0;
+                level = 1;
+                timeLeft = 300;
+                currentInput = "";
+                
+                document.getElementById('menu-screen').classList.add('hidden');
+                document.getElementById('game-screen').classList.remove('hidden');
+                document.getElementById('game-screen').classList.add('flex');
+                document.getElementById('game-over-screen').classList.add('hidden');
+                
+                updateUI();
+                nextQuestion(); // Generates question first
+                startTimer();
+            } catch (e) {
+                console.error("Error starting game:", e);
+                alert("Terjadi kesalahan saat memulai game. Silakan refresh.");
+            }
         }
 
         function showMenu() {
@@ -332,13 +341,14 @@
             document.getElementById('final-correct').textContent = correctCount;
             document.getElementById('final-wrong').textContent = wrongCount;
             document.getElementById('game-over-screen').classList.remove('hidden');
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            if (typeof confetti === 'function') {
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            }
             speak("Misi Selesai! Skor kamu " + score);
         }
 
         function generateQuestion() {
             let a, b, op, ans, displayOp;
-            
             let rangeA_min = 1, rangeA_max = 9;
             let rangeB_min = 1, rangeB_max = 9;
 
@@ -380,39 +390,51 @@
                     if (level > 10) quotient = Math.floor(Math.random() * 12) + 2;
                     b = divisor; ans = quotient; a = b * ans; displayOp = '÷'; break;
             }
-
             return { a, b, op: displayOp, ans };
         }
 
         function nextQuestion() {
             currentQuestion = generateQuestion();
-            document.getElementById('question-text').textContent = `${currentQuestion.a} ${currentQuestion.op} ${currentQuestion.b}`;
+            const qText = document.getElementById('question-text');
+            if(qText) qText.textContent = `${currentQuestion.a} ${currentQuestion.op} ${currentQuestion.b}`;
+            
             currentInput = "";
-            document.getElementById('answer-display').textContent = "?";
-            document.getElementById('answer-display').classList.remove('text-white');
-            document.getElementById('answer-display').classList.add('text-cyan-300');
+            const ansDisplay = document.getElementById('answer-display');
+            if(ansDisplay) {
+                ansDisplay.textContent = "?";
+                ansDisplay.classList.remove('text-white');
+                ansDisplay.classList.add('text-cyan-300');
+            }
             
             const container = document.getElementById('question-container');
-            container.classList.remove('pop-in');
-            void container.offsetWidth;
-            container.classList.add('pop-in');
+            if(container) {
+                container.classList.remove('pop-in');
+                void container.offsetWidth;
+                container.classList.add('pop-in');
+            }
         }
 
         function inputNum(num) {
             if (currentInput.length < 4) {
                 currentInput += num;
-                document.getElementById('answer-display').textContent = currentInput;
-                document.getElementById('answer-display').classList.add('text-white');
-                document.getElementById('answer-display').classList.remove('text-cyan-300');
+                const el = document.getElementById('answer-display');
+                if(el) {
+                    el.textContent = currentInput;
+                    el.classList.add('text-white');
+                    el.classList.remove('text-cyan-300');
+                }
                 playSound('click');
             }
         }
 
         function clearEntry() {
             currentInput = "";
-            document.getElementById('answer-display').textContent = "?";
-            document.getElementById('answer-display').classList.remove('text-white');
-            document.getElementById('answer-display').classList.add('text-cyan-300');
+            const el = document.getElementById('answer-display');
+            if(el) {
+                el.textContent = "?";
+                el.classList.remove('text-white');
+                el.classList.add('text-cyan-300');
+            }
             playSound('click');
         }
 
@@ -423,14 +445,12 @@
             const container = document.getElementById('game-screen');
             
             if (userAns === currentQuestion.ans) {
-                // BENAR
                 playSound('correct');
                 showPraise();
-                
                 score += 10 + (streak * 2);
                 correctCount++;
                 streak++;
-                timeLeft += 10; // BONUS WAKTU +10 DETIK
+                timeLeft += 10; 
                 
                 if (streak % 5 === 0) {
                     level++;
@@ -444,12 +464,9 @@
                 animateRocket();
                 setTimeout(nextQuestion, 800); 
             } else {
-                // SALAH
                 playSound('wrong');
                 streak = 0;
                 wrongCount++;
-                // WAKTU TETAP (TIDAK BERKURANG)
-                
                 document.getElementById('feedback-msg').textContent = "COBA LAGI...";
                 const qBox = document.getElementById('question-container');
                 qBox.classList.add('shake');
@@ -458,8 +475,7 @@
                 setTimeout(() => {
                     qBox.classList.remove('shake');
                     container.classList.remove('wrong-flash');
-                    currentInput = "";
-                    document.getElementById('answer-display').textContent = "?";
+                    clearEntry();
                 }, 500);
             }
             updateUI();
@@ -467,12 +483,14 @@
 
         function animateRocket() {
             const rocket = document.getElementById('rocket-anim');
-            rocket.style.opacity = 1;
-            rocket.style.transform = "translateY(-100px) rotate(45deg)";
-            setTimeout(() => {
-                rocket.style.opacity = 0;
-                rocket.style.transform = "translateY(0) rotate(0deg)";
-            }, 500);
+            if(rocket) {
+                rocket.style.opacity = 1;
+                rocket.style.transform = "translateY(-100px) rotate(45deg)";
+                setTimeout(() => {
+                    rocket.style.opacity = 0;
+                    rocket.style.transform = "translateY(0) rotate(0deg)";
+                }, 500);
+            }
         }
 
         function updateUI() {
