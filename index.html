@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Misi Matematika Antariksa v2.0</title>
+    <title>Misi Matematika Antariksa v2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Varela+Round&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -96,7 +96,7 @@
         <div class="flex justify-between items-center p-4 pt-6 gap-2">
             <button onclick="quitGame()" class="text-slate-400 hover:text-white text-2xl">🏠</button>
             
-            <!-- Stats Display (NEW: BENAR & SALAH) -->
+            <!-- Stats Display -->
             <div class="flex flex-col items-center mx-auto bg-slate-800/50 px-4 py-1 rounded-xl border border-slate-700">
                 <div class="text-[10px] text-slate-400 font-bold tracking-wider uppercase mb-0.5">Misi Report</div>
                 <div class="flex gap-4 text-lg font-space">
@@ -134,7 +134,7 @@
                 <div id="question-text" class="text-5xl font-space text-white tracking-wide mb-2">?</div>
                 <div class="w-full h-1 bg-slate-700 my-4"></div>
                 <!-- Tempat Jawaban -->
-                <div id="answer-display" class="text-5xl font-space text-cyan-300 h-14 min-w-[100px] border-b-4 border-dashed border-slate-600 flex items-center justify-center"></div>
+                <div id="answer-display" class="text-5xl font-space text-cyan-300 h-14 min-w-[100px] border-b-4 border-dashed border-slate-600 flex items-center justify-center">?</div>
             </div>
             <div id="feedback-msg" class="h-6 mt-2 text-sm font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500"></div>
         </div>
@@ -187,11 +187,9 @@
     </div>
 
     <script>
-        // Global Error Handler
+        // Global Error Handler untuk menangkap crash
         window.onerror = function(message, source, lineno, colno, error) {
-            const errorLog = document.getElementById('error-log');
-            errorLog.textContent = `Error: ${message}\nLine: ${lineno}`;
-            errorLog.classList.remove('hidden');
+            console.error(message);
             return false;
         };
 
@@ -213,7 +211,12 @@
 
         const praises = ["HEBAT!", "LUAR BIASA!", "MANTAP!", "KEREN!", "PINTAR!", "GOOD JOB!", "WOW!", "SUPER!"];
 
-        // Initialize Audio Safe Mode
+        // Helper Aman untuk Set Text
+        function setTxt(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        }
+
         function initAudio() {
             try {
                 if (!audioCtx) {
@@ -226,11 +229,10 @@
                 voiceIndo = voices.find(v => v.lang.includes('id-ID') || v.lang.includes('ind'));
                 voiceEng = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
             } catch (e) {
-                console.log("Audio init failed (minor issue):", e);
+                console.log("Audio init warning:", e);
             }
         }
         
-        // Try init voices early
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = initAudio;
         }
@@ -280,19 +282,20 @@
         function showPraise() {
             const praiseText = praises[Math.floor(Math.random() * praises.length)];
             const overlay = document.getElementById('praise-overlay');
-            overlay.textContent = praiseText;
-            overlay.classList.remove('hidden');
-            overlay.classList.remove('praise-anim');
-            void overlay.offsetWidth; 
-            overlay.classList.add('praise-anim');
-            speak(praiseText);
-            setTimeout(() => overlay.classList.add('hidden'), 1000);
+            if(overlay) {
+                overlay.textContent = praiseText;
+                overlay.classList.remove('hidden');
+                overlay.classList.remove('praise-anim');
+                void overlay.offsetWidth; 
+                overlay.classList.add('praise-anim');
+                speak(praiseText);
+                setTimeout(() => overlay.classList.add('hidden'), 1000);
+            }
         }
 
         function startGame(mode) {
-            // Safe start sequence
             try {
-                initAudio(); // Try to init audio on click
+                initAudio();
             } catch (e) {}
 
             currentMode = mode;
@@ -309,7 +312,6 @@
             document.getElementById('game-screen').classList.add('flex');
             document.getElementById('game-over-screen').classList.add('hidden');
             
-            // Logic order important
             updateUI();
             nextQuestion(); 
             startTimer();
@@ -331,12 +333,12 @@
             clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 timeLeft--;
-                document.getElementById('timer-display').textContent = timeLeft;
+                setTxt('timer-display', timeLeft);
                 
-                if (timeLeft <= 10) {
-                    document.getElementById('timer-display').classList.add('text-red-500', 'animate-pulse');
-                } else {
-                    document.getElementById('timer-display').classList.remove('text-red-500', 'animate-pulse');
+                const timerEl = document.getElementById('timer-display');
+                if (timerEl) {
+                    if (timeLeft <= 10) timerEl.classList.add('text-red-500', 'animate-pulse');
+                    else timerEl.classList.remove('text-red-500', 'animate-pulse');
                 }
                 
                 if (timeLeft <= 0) {
@@ -347,12 +349,12 @@
 
         function endGame() {
             clearInterval(timerInterval);
-            document.getElementById('final-score').textContent = score;
-            document.getElementById('final-correct').textContent = correctCount;
-            document.getElementById('final-wrong').textContent = wrongCount;
+            setTxt('final-score', score);
+            setTxt('final-correct', correctCount);
+            setTxt('final-wrong', wrongCount);
             document.getElementById('game-over-screen').classList.remove('hidden');
             try {
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             } catch (e) {}
             speak("Misi Selesai! Skor kamu " + score);
         }
@@ -365,15 +367,15 @@
             if (level <= 5) {
                 rangeA_min = 1; rangeA_max = 9;
                 rangeB_min = 1; rangeB_max = 9;
-                document.getElementById('difficulty-label').textContent = "(Mudah)";
+                setTxt('difficulty-label', "(Mudah)");
             } else if (level <= 10) {
                 rangeA_min = 10; rangeA_max = 50;
                 rangeB_min = 2; rangeB_max = 9;
-                document.getElementById('difficulty-label').textContent = "(Sedang)";
+                setTxt('difficulty-label', "(Sedang)");
             } else {
                 rangeA_min = 10; rangeA_max = 99;
                 rangeB_min = 10; rangeB_max = 99;
-                document.getElementById('difficulty-label').textContent = "(Sulit)";
+                setTxt('difficulty-label', "(Sulit)");
             }
 
             const mode = currentMode === 'campur' ? 
@@ -405,33 +407,45 @@
 
         function nextQuestion() {
             currentQuestion = generateQuestion();
-            document.getElementById('question-text').textContent = `${currentQuestion.a} ${currentQuestion.op} ${currentQuestion.b}`;
+            setTxt('question-text', `${currentQuestion.a} ${currentQuestion.op} ${currentQuestion.b}`);
+            
             currentInput = "";
-            document.getElementById('answer-display').textContent = "?";
-            document.getElementById('answer-display').classList.remove('text-white');
-            document.getElementById('answer-display').classList.add('text-cyan-300');
+            const ansDisplay = document.getElementById('answer-display');
+            if(ansDisplay) {
+                ansDisplay.textContent = "?";
+                ansDisplay.classList.remove('text-white');
+                ansDisplay.classList.add('text-cyan-300');
+            }
             
             const container = document.getElementById('question-container');
-            container.classList.remove('pop-in');
-            void container.offsetWidth;
-            container.classList.add('pop-in');
+            if(container) {
+                container.classList.remove('pop-in');
+                void container.offsetWidth;
+                container.classList.add('pop-in');
+            }
         }
 
         function inputNum(num) {
             if (currentInput.length < 4) {
                 currentInput += num;
-                document.getElementById('answer-display').textContent = currentInput;
-                document.getElementById('answer-display').classList.add('text-white');
-                document.getElementById('answer-display').classList.remove('text-cyan-300');
+                const el = document.getElementById('answer-display');
+                if(el) {
+                    el.textContent = currentInput;
+                    el.classList.add('text-white');
+                    el.classList.remove('text-cyan-300');
+                }
                 playSound('click');
             }
         }
 
         function clearEntry() {
             currentInput = "";
-            document.getElementById('answer-display').textContent = "?";
-            document.getElementById('answer-display').classList.remove('text-white');
-            document.getElementById('answer-display').classList.add('text-cyan-300');
+            const el = document.getElementById('answer-display');
+            if(el) {
+                el.textContent = "?";
+                el.classList.remove('text-white');
+                el.classList.add('text-cyan-300');
+            }
             playSound('click');
         }
 
@@ -442,7 +456,6 @@
             const container = document.getElementById('game-screen');
             
             if (userAns === currentQuestion.ans) {
-                // BENAR
                 playSound('correct');
                 showPraise();
                 score += 10 + (streak * 2);
@@ -452,28 +465,30 @@
                 
                 if (streak % 5 === 0) {
                     level++;
-                    document.getElementById('feedback-msg').textContent = "LEVEL UP!";
+                    setTxt('feedback-msg', "LEVEL UP!");
                 } else {
-                    document.getElementById('feedback-msg').textContent = "";
+                    setTxt('feedback-msg', "");
                 }
 
-                container.classList.add('correct-flash');
-                setTimeout(() => container.classList.remove('correct-flash'), 500);
+                if (container) {
+                    container.classList.add('correct-flash');
+                    setTimeout(() => container.classList.remove('correct-flash'), 500);
+                }
                 animateRocket();
                 setTimeout(nextQuestion, 800); 
             } else {
-                // SALAH
                 playSound('wrong');
                 streak = 0;
                 wrongCount++;
-                document.getElementById('feedback-msg').textContent = "COBA LAGI...";
+                setTxt('feedback-msg', "COBA LAGI...");
+                
                 const qBox = document.getElementById('question-container');
-                qBox.classList.add('shake');
-                container.classList.add('wrong-flash');
+                if(qBox) qBox.classList.add('shake');
+                if(container) container.classList.add('wrong-flash');
                 
                 setTimeout(() => {
-                    qBox.classList.remove('shake');
-                    container.classList.remove('wrong-flash');
+                    if(qBox) qBox.classList.remove('shake');
+                    if(container) container.classList.remove('wrong-flash');
                     clearEntry();
                 }, 500);
             }
@@ -493,15 +508,16 @@
         }
 
         function updateUI() {
-            document.getElementById('score-display').textContent = score;
-            document.getElementById('level-display').textContent = level;
-            document.getElementById('streak-count').textContent = streak;
-            document.getElementById('correct-display').textContent = correctCount;
-            document.getElementById('wrong-display').textContent = wrongCount;
+            setTxt('score-display', score);
+            setTxt('level-display', level);
+            setTxt('streak-count', streak);
+            setTxt('correct-display', correctCount);
+            setTxt('wrong-display', wrongCount);
             
             const maxStreak = 10;
             const percentage = Math.min((streak / maxStreak) * 100, 100);
-            document.getElementById('streak-bar').style.width = `${percentage}%`;
+            const bar = document.getElementById('streak-bar');
+            if(bar) bar.style.width = `${percentage}%`;
         }
     </script>
 </body>
