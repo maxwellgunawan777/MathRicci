@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Misi Matematika Antariksa</title>
+    <title>Misi Matematika Antariksa v2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Varela+Round&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -93,18 +93,13 @@
         <div class="flex justify-between items-center p-4 pt-6 gap-2">
             <button onclick="quitGame()" class="text-slate-400 hover:text-white text-2xl">🏠</button>
             
-            <!-- Stats Display (NEW) -->
+            <!-- Stats Display (NEW: BENAR & SALAH) -->
             <div class="flex flex-col items-center mx-auto bg-slate-800/50 px-4 py-1 rounded-xl border border-slate-700">
-                <div class="text-[10px] text-slate-400 font-bold tracking-wider uppercase mb-0.5">Status Misi</div>
+                <div class="text-[10px] text-slate-400 font-bold tracking-wider uppercase mb-0.5">Misi Report</div>
                 <div class="flex gap-4 text-lg font-space">
-                    <span class="text-green-400 drop-shadow-sm">✔ <span id="correct-display">0</span></span>
-                    <span class="text-red-400 drop-shadow-sm">✖ <span id="wrong-display">0</span></span>
+                    <span class="text-green-400 drop-shadow-sm flex items-center gap-1">✔ <span id="correct-display">0</span></span>
+                    <span class="text-red-400 drop-shadow-sm flex items-center gap-1">✖ <span id="wrong-display">0</span></span>
                 </div>
-            </div>
-
-            <div class="flex flex-col items-center">
-                <div class="text-xs text-cyan-400 font-bold tracking-widest">SKOR</div>
-                <div id="score-display" class="text-2xl font-space">0</div>
             </div>
 
             <div class="flex flex-col items-center w-16">
@@ -192,10 +187,10 @@
         let currentMode = 'tambah';
         let score = 0;
         let correctCount = 0;
-        let wrongCount = 0; // New var for wrong answers
+        let wrongCount = 0;
         let streak = 0;
         let level = 1;
-        let timeLeft = 300; // Updated initial time
+        let timeLeft = 300; // WAKTU AWAL 300 DETIK
         let timerInterval;
         let currentQuestion = {};
         let currentInput = "";
@@ -210,7 +205,6 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const synth = window.speechSynthesis;
 
-        // Init voice for speech (pujian)
         let voiceIndo = null;
         let voiceEng = null;
         function initVoice() {
@@ -287,10 +281,10 @@
             currentMode = mode;
             score = 0;
             correctCount = 0;
-            wrongCount = 0; // Reset wrong count
+            wrongCount = 0;
             streak = 0;
             level = 1;
-            timeLeft = 300; // Updated time
+            timeLeft = 300; // RESET WAKTU KE 300 DETIK
             currentInput = "";
             
             document.getElementById('menu-screen').classList.add('hidden');
@@ -436,7 +430,7 @@
                 score += 10 + (streak * 2);
                 correctCount++;
                 streak++;
-                timeLeft += 10; // BONUS WAKTU +10
+                timeLeft += 10; // BONUS WAKTU +10 DETIK
                 
                 if (streak % 5 === 0) {
                     level++;
@@ -453,8 +447,8 @@
                 // SALAH
                 playSound('wrong');
                 streak = 0;
-                wrongCount++; // Tambah counter salah
-                // Tidak ada pengurangan waktu
+                wrongCount++;
+                // WAKTU TETAP (TIDAK BERKURANG)
                 
                 document.getElementById('feedback-msg').textContent = "COBA LAGI...";
                 const qBox = document.getElementById('question-container');
