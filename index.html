@@ -3,100 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Misi Matematika Antariksa v2.1</title>
+    <title>Misi Matematika Antariksa v2.2 (Stabil)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Varela+Round&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        body {
-            font-family: 'Varela Round', sans-serif;
-            background-color: #0f172a; /* Dark Space Blue */
-            color: white;
-            overflow: hidden;
-            touch-action: manipulation;
-        }
+        body { font-family: 'Varela Round', sans-serif; background-color: #0f172a; color: white; overflow: hidden; touch-action: manipulation; }
         .font-space { font-family: 'Righteous', cursive; }
-        
-        /* Background Stars Animation */
-        .stars {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: radial-gradient(white 1px, transparent 1px);
-            background-size: 50px 50px;
-            opacity: 0.3;
-            z-index: -1;
-        }
-        
-        /* Numpad Styles */
-        .btn-num {
-            @apply bg-slate-700/50 border-2 border-slate-500 rounded-2xl text-2xl font-bold shadow-lg active:scale-95 transition-all backdrop-blur-sm hover:bg-slate-600 hover:border-cyan-400;
-            height: 60px;
-        }
-
-        /* Animations */
+        .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px; opacity: 0.3; z-index: -1; }
+        .btn-num { @apply bg-slate-700/50 border-2 border-slate-500 rounded-2xl text-2xl font-bold shadow-lg active:scale-95 transition-all backdrop-blur-sm hover:bg-slate-600 hover:border-cyan-400; height: 60px; }
         .pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
         .shake { animation: shake 0.4s ease-in-out; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
-
         .slide-up { animation: slideUp 0.5s ease-out; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        
         .correct-flash { animation: flashGreen 0.5s; }
         @keyframes flashGreen { 0%, 100% { background-color: transparent; } 50% { background-color: rgba(34, 197, 94, 0.3); } }
-
         .wrong-flash { animation: flashRed 0.5s; }
         @keyframes flashRed { 0%, 100% { background-color: transparent; } 50% { background-color: rgba(239, 68, 68, 0.3); } }
-
-        /* Animasi Pujian */
         .praise-anim { animation: praisePop 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards; }
-        @keyframes praisePop {
-            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
-            50% { transform: scale(1.2) rotate(10deg); opacity: 1; }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
-        }
+        @keyframes praisePop { 0% { transform: scale(0) rotate(-10deg); opacity: 0; } 50% { transform: scale(1.2) rotate(10deg); opacity: 1; } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
     </style>
 </head>
 <body class="h-screen flex flex-col relative">
 
     <div class="stars"></div>
-
-    <!-- Error Log Display (Untuk Diagnosa) -->
-    <div id="error-log" class="hidden absolute top-2 left-2 right-2 z-50 bg-red-900/90 text-red-200 text-xs p-2 rounded border border-red-500 font-mono whitespace-pre-wrap"></div>
+    
+    <!-- Error Log Display (Hidden by default) -->
+    <div id="error-log" class="hidden absolute top-2 left-2 right-2 z-50 bg-red-900/90 text-red-200 text-xs p-2 rounded border border-red-500 font-mono whitespace-pre-wrap pointer-events-none"></div>
 
     <!-- LAYAR MENU UTAMA -->
     <div id="menu-screen" class="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 bg-slate-900/90 backdrop-blur-md">
         <div class="text-6xl mb-4 animate-bounce">🚀</div>
         <h1 class="text-4xl text-center font-space text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2 drop-shadow-lg">MISI ANTARIKSA</h1>
-        <p class="text-slate-400 text-sm mb-8 text-center">Bantu kapten mengisi bahan bakar dengan menjawab soal matematika!</p>
+        <p class="text-slate-400 text-sm mb-8 text-center">Siap meluncur kapten? Pilih misimu:</p>
         
         <div class="grid grid-cols-2 gap-4 w-full max-w-xs">
-            <button onclick="startGame('tambah')" class="bg-blue-600 hover:bg-blue-500 p-4 rounded-2xl font-bold shadow-blue-900/50 shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 transition-all">
-                <div class="text-2xl">➕</div> Penjumlahan
-            </button>
-            <button onclick="startGame('kurang')" class="bg-orange-600 hover:bg-orange-500 p-4 rounded-2xl font-bold shadow-orange-900/50 shadow-lg border-b-4 border-orange-800 active:border-b-0 active:translate-y-1 transition-all">
-                <div class="text-2xl">➖</div> Pengurangan
-            </button>
-            <button onclick="startGame('kali')" class="bg-purple-600 hover:bg-purple-500 p-4 rounded-2xl font-bold shadow-purple-900/50 shadow-lg border-b-4 border-purple-800 active:border-b-0 active:translate-y-1 transition-all">
-                <div class="text-2xl">✖️</div> Perkalian
-            </button>
-            <button onclick="startGame('bagi')" class="bg-pink-600 hover:bg-pink-500 p-4 rounded-2xl font-bold shadow-pink-900/50 shadow-lg border-b-4 border-pink-800 active:border-b-0 active:translate-y-1 transition-all">
-                <div class="text-2xl">➗</div> Pembagian
-            </button>
-            <button onclick="startGame('campur')" class="col-span-2 bg-emerald-600 hover:bg-emerald-500 p-4 rounded-2xl font-bold shadow-emerald-900/50 shadow-lg border-b-4 border-emerald-800 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center gap-2">
-                <span class="text-2xl">🎲</span> TANTANGAN ACAK
-            </button>
+            <button onclick="startGame('tambah')" class="bg-blue-600 hover:bg-blue-500 p-4 rounded-2xl font-bold shadow-blue-900/50 shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 transition-all"><div class="text-2xl">➕</div> Penjumlahan</button>
+            <button onclick="startGame('kurang')" class="bg-orange-600 hover:bg-orange-500 p-4 rounded-2xl font-bold shadow-orange-900/50 shadow-lg border-b-4 border-orange-800 active:border-b-0 active:translate-y-1 transition-all"><div class="text-2xl">➖</div> Pengurangan</button>
+            <button onclick="startGame('kali')" class="bg-purple-600 hover:bg-purple-500 p-4 rounded-2xl font-bold shadow-purple-900/50 shadow-lg border-b-4 border-purple-800 active:border-b-0 active:translate-y-1 transition-all"><div class="text-2xl">✖️</div> Perkalian</button>
+            <button onclick="startGame('bagi')" class="bg-pink-600 hover:bg-pink-500 p-4 rounded-2xl font-bold shadow-pink-900/50 shadow-lg border-b-4 border-pink-800 active:border-b-0 active:translate-y-1 transition-all"><div class="text-2xl">➗</div> Pembagian</button>
+            <button onclick="startGame('campur')" class="col-span-2 bg-emerald-600 hover:bg-emerald-500 p-4 rounded-2xl font-bold shadow-emerald-900/50 shadow-lg border-b-4 border-emerald-800 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center gap-2"><span class="text-2xl">🎲</span> TANTANGAN ACAK</button>
         </div>
     </div>
 
     <!-- LAYAR GAME -->
     <div id="game-screen" class="hidden flex-col h-full w-full max-w-md mx-auto relative">
-        
-        <!-- Header Status -->
         <div class="flex justify-between items-center p-4 pt-6 gap-2">
             <button onclick="quitGame()" class="text-slate-400 hover:text-white text-2xl">🏠</button>
-            
-            <!-- Stats Display -->
             <div class="flex flex-col items-center mx-auto bg-slate-800/50 px-4 py-1 rounded-xl border border-slate-700">
                 <div class="text-[10px] text-slate-400 font-bold tracking-wider uppercase mb-0.5">Misi Report</div>
                 <div class="flex gap-4 text-lg font-space">
@@ -104,14 +59,12 @@
                     <span class="text-red-400 drop-shadow-sm flex items-center gap-1">✖ <span id="wrong-display">0</span></span>
                 </div>
             </div>
-
             <div class="flex flex-col items-center w-16">
                 <div class="text-xs text-red-400 font-bold tracking-widest">WAKTU</div>
                 <div id="timer-display" class="text-2xl font-space text-white">300</div>
             </div>
         </div>
 
-        <!-- Progress Bar (Fuel) -->
         <div class="px-6 mb-2">
             <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700 relative">
                 <div id="streak-bar" class="bg-gradient-to-r from-yellow-400 to-orange-500 h-full w-0 transition-all duration-300"></div>
@@ -122,35 +75,22 @@
             </div>
         </div>
 
-        <!-- Area Soal -->
         <div class="flex-grow flex flex-col items-center justify-center py-4 relative">
-            <!-- Praise Overlay (Muncul saat benar) -->
             <div id="praise-overlay" class="hidden absolute z-10 text-4xl font-space text-yellow-300 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] praise-anim text-center w-full pointer-events-none top-10">HEBAT!</div>
-
             <div id="question-container" class="bg-slate-800/80 border-2 border-cyan-500/30 p-6 rounded-3xl w-4/5 text-center shadow-[0_0_30px_rgba(6,182,212,0.15)] backdrop-blur-md pop-in relative">
-                <!-- Animasi Roket Kecil kalau benar -->
                 <div id="rocket-anim" class="absolute -right-8 bottom-0 text-4xl opacity-0 transition-all duration-500">🚀</div>
-                
                 <div id="question-text" class="text-5xl font-space text-white tracking-wide mb-2">?</div>
                 <div class="w-full h-1 bg-slate-700 my-4"></div>
-                <!-- Tempat Jawaban -->
                 <div id="answer-display" class="text-5xl font-space text-cyan-300 h-14 min-w-[100px] border-b-4 border-dashed border-slate-600 flex items-center justify-center">?</div>
             </div>
             <div id="feedback-msg" class="h-6 mt-2 text-sm font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500"></div>
         </div>
 
-        <!-- Numpad -->
         <div class="bg-slate-800/90 rounded-t-3xl p-5 pb-8 shadow-2xl border-t border-slate-700 slide-up">
             <div class="grid grid-cols-3 gap-3">
-                <button onclick="inputNum(1)" class="btn-num">1</button>
-                <button onclick="inputNum(2)" class="btn-num">2</button>
-                <button onclick="inputNum(3)" class="btn-num">3</button>
-                <button onclick="inputNum(4)" class="btn-num">4</button>
-                <button onclick="inputNum(5)" class="btn-num">5</button>
-                <button onclick="inputNum(6)" class="btn-num">6</button>
-                <button onclick="inputNum(7)" class="btn-num">7</button>
-                <button onclick="inputNum(8)" class="btn-num">8</button>
-                <button onclick="inputNum(9)" class="btn-num">9</button>
+                <button onclick="inputNum(1)" class="btn-num">1</button><button onclick="inputNum(2)" class="btn-num">2</button><button onclick="inputNum(3)" class="btn-num">3</button>
+                <button onclick="inputNum(4)" class="btn-num">4</button><button onclick="inputNum(5)" class="btn-num">5</button><button onclick="inputNum(6)" class="btn-num">6</button>
+                <button onclick="inputNum(7)" class="btn-num">7</button><button onclick="inputNum(8)" class="btn-num">8</button><button onclick="inputNum(9)" class="btn-num">9</button>
                 <button onclick="clearEntry()" class="btn-num bg-red-900/50 border-red-800 text-red-300 hover:bg-red-800">C</button>
                 <button onclick="inputNum(0)" class="btn-num">0</button>
                 <button onclick="submitAnswer()" class="btn-num bg-green-600 border-green-500 text-white hover:bg-green-500 shadow-green-900/50">⏎</button>
@@ -163,79 +103,64 @@
         <div class="text-6xl mb-2">🏆</div>
         <h2 class="text-3xl font-space text-white mb-1">MISI SELESAI!</h2>
         <p class="text-slate-400 text-sm mb-6">Laporan Penerbangan Anda:</p>
-        
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 w-full max-w-xs mb-8 shadow-2xl">
             <div class="flex justify-between items-center border-b border-slate-700 pb-3 mb-3">
                 <span class="text-slate-400">Skor Akhir</span>
                 <span id="final-score" class="text-3xl font-space text-cyan-400">0</span>
             </div>
             <div class="grid grid-cols-2 gap-4 pt-1">
-                <div class="flex flex-col items-center bg-slate-900/50 p-2 rounded-xl border border-slate-700">
-                    <span class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">BENAR</span>
-                    <span id="final-correct" class="text-2xl font-bold text-green-400">0</span>
-                </div>
-                <div class="flex flex-col items-center bg-slate-900/50 p-2 rounded-xl border border-slate-700">
-                    <span class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">SALAH</span>
-                    <span id="final-wrong" class="text-2xl font-bold text-red-400">0</span>
-                </div>
+                <div class="flex flex-col items-center bg-slate-900/50 p-2 rounded-xl border border-slate-700"><span class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">BENAR</span><span id="final-correct" class="text-2xl font-bold text-green-400">0</span></div>
+                <div class="flex flex-col items-center bg-slate-900/50 p-2 rounded-xl border border-slate-700"><span class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">SALAH</span><span id="final-wrong" class="text-2xl font-bold text-red-400">0</span></div>
             </div>
         </div>
-
-        <button onclick="showMenu()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-10 py-4 rounded-full font-bold shadow-lg shadow-cyan-500/30 active:scale-95 transition-all text-lg tracking-wide">
-            MAIN LAGI
-        </button>
+        <button onclick="showMenu()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-10 py-4 rounded-full font-bold shadow-lg shadow-cyan-500/30 active:scale-95 transition-all text-lg tracking-wide">MAIN LAGI</button>
     </div>
 
     <script>
-        // Global Error Handler untuk menangkap crash
+        // Global Error Handler (Safe Mode)
         window.onerror = function(message, source, lineno, colno, error) {
-            console.error(message);
-            return false;
+            const errorLog = document.getElementById('error-log');
+            if (errorLog) {
+                errorLog.textContent = `Log: ${message} (Line: ${lineno})`;
+                // Tidak menampilkan di layar user agar tidak mengganggu, hanya di console/log tersembunyi
+                console.error(message);
+            }
+            return true; // Prevent default crash
         };
 
+        // --- HELPER AMAN UNTUK UPDATE UI ---
+        // Fungsi ini memastikan elemen ada sebelum diubah, mencegah error "null"
+        function setTxt(id, text) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = text;
+            } else {
+                console.warn(`Elemen dengan ID '${id}' tidak ditemukan.`);
+            }
+        }
+
         let currentMode = 'tambah';
-        let score = 0;
-        let correctCount = 0;
-        let wrongCount = 0;
-        let streak = 0;
-        let level = 1;
-        let timeLeft = 300;
+        let score = 0, correctCount = 0, wrongCount = 0, streak = 0, level = 1, timeLeft = 300;
         let timerInterval;
         let currentQuestion = {};
         let currentInput = "";
-        
         let audioCtx;
         const synth = window.speechSynthesis;
         let voiceIndo = null;
         let voiceEng = null;
-
         const praises = ["HEBAT!", "LUAR BIASA!", "MANTAP!", "KEREN!", "PINTAR!", "GOOD JOB!", "WOW!", "SUPER!"];
 
-        // Helper Aman untuk Set Text
-        function setTxt(id, text) {
-            const el = document.getElementById(id);
-            if (el) el.textContent = text;
-        }
-
+        // Init Audio (Lazy Load)
         function initAudio() {
             try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
                 const voices = synth.getVoices();
                 voiceIndo = voices.find(v => v.lang.includes('id-ID') || v.lang.includes('ind'));
                 voiceEng = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
-            } catch (e) {
-                console.log("Audio init warning:", e);
-            }
+            } catch (e) { console.log("Audio init warning:", e); }
         }
-        
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = initAudio;
-        }
+        if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = initAudio;
 
         function playSound(type) {
             if (!audioCtx) return;
@@ -245,25 +170,17 @@
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 const now = audioCtx.currentTime;
-
                 if (type === 'correct') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(523.25, now);
-                    osc.frequency.setValueAtTime(659.25, now + 0.1);
-                    gain.gain.setValueAtTime(0.1, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
                     osc.start(now); osc.stop(now + 0.2);
                 } else if (type === 'wrong') {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(150, now);
-                    gain.gain.setValueAtTime(0.1, now);
-                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
                     osc.start(now); osc.stop(now + 0.3);
                 } else if (type === 'click') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(800, now);
-                    gain.gain.setValueAtTime(0.05, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
+                    gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                     osc.start(now); osc.stop(now + 0.05);
                 }
             } catch (e) { console.log("Sound error:", e); }
@@ -273,8 +190,7 @@
             try {
                 const u = new SpeechSynthesisUtterance(text);
                 if (voiceIndo) u.voice = voiceIndo;
-                u.lang = 'id-ID';
-                u.rate = 1.2; u.pitch = 1.2; u.volume = 1.0;
+                u.lang = 'id-ID'; u.rate = 1.2; u.pitch = 1.2; u.volume = 1.0;
                 synth.speak(u);
             } catch (e) { console.log("Speech error:", e); }
         }
@@ -284,8 +200,7 @@
             const overlay = document.getElementById('praise-overlay');
             if(overlay) {
                 overlay.textContent = praiseText;
-                overlay.classList.remove('hidden');
-                overlay.classList.remove('praise-anim');
+                overlay.classList.remove('hidden', 'praise-anim');
                 void overlay.offsetWidth; 
                 overlay.classList.add('praise-anim');
                 speak(praiseText);
@@ -294,26 +209,25 @@
         }
 
         function startGame(mode) {
-            try {
-                initAudio();
-            } catch (e) {}
-
-            currentMode = mode;
-            score = 0;
-            correctCount = 0;
-            wrongCount = 0;
-            streak = 0;
-            level = 1;
-            timeLeft = 300;
-            currentInput = "";
+            try { initAudio(); } catch (e) {}
+            currentMode = mode; score = 0; correctCount = 0; wrongCount = 0; streak = 0; level = 1; timeLeft = 300; currentInput = "";
             
             document.getElementById('menu-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            document.getElementById('game-screen').classList.add('flex');
+            const gameScreen = document.getElementById('game-screen');
+            gameScreen.classList.remove('hidden');
+            gameScreen.classList.add('flex');
             document.getElementById('game-over-screen').classList.add('hidden');
             
-            updateUI();
+            // Reset UI elements specifically to avoid glitches
+            setTxt('timer-display', timeLeft);
+            setTxt('score-display', "0");
+            
+            // Generate first question BEFORE starting timer
             nextQuestion(); 
+            updateUI();
+            
+            // Clear any existing timer first
+            if (timerInterval) clearInterval(timerInterval);
             startTimer();
         }
 
@@ -322,6 +236,7 @@
             document.getElementById('game-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('flex');
             document.getElementById('menu-screen').classList.remove('hidden');
+            if (timerInterval) clearInterval(timerInterval);
         }
 
         function quitGame() {
@@ -330,20 +245,15 @@
         }
 
         function startTimer() {
-            clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 timeLeft--;
                 setTxt('timer-display', timeLeft);
-                
                 const timerEl = document.getElementById('timer-display');
                 if (timerEl) {
                     if (timeLeft <= 10) timerEl.classList.add('text-red-500', 'animate-pulse');
                     else timerEl.classList.remove('text-red-500', 'animate-pulse');
                 }
-                
-                if (timeLeft <= 0) {
-                    endGame();
-                }
+                if (timeLeft <= 0) endGame();
             }, 1000);
         }
 
@@ -353,9 +263,7 @@
             setTxt('final-correct', correctCount);
             setTxt('final-wrong', wrongCount);
             document.getElementById('game-over-screen').classList.remove('hidden');
-            try {
-                if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-            } catch (e) {}
+            try { if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); } catch (e) {}
             speak("Misi Selesai! Skor kamu " + score);
         }
 
@@ -365,21 +273,17 @@
             let rangeB_min = 1, rangeB_max = 9;
 
             if (level <= 5) {
-                rangeA_min = 1; rangeA_max = 9;
-                rangeB_min = 1; rangeB_max = 9;
+                rangeA_min = 1; rangeA_max = 9; rangeB_min = 1; rangeB_max = 9;
                 setTxt('difficulty-label', "(Mudah)");
             } else if (level <= 10) {
-                rangeA_min = 10; rangeA_max = 50;
-                rangeB_min = 2; rangeB_max = 9;
+                rangeA_min = 10; rangeA_max = 50; rangeB_min = 2; rangeB_max = 9;
                 setTxt('difficulty-label', "(Sedang)");
             } else {
-                rangeA_min = 10; rangeA_max = 99;
-                rangeB_min = 10; rangeB_max = 99;
+                rangeA_min = 10; rangeA_max = 99; rangeB_min = 10; rangeB_max = 99;
                 setTxt('difficulty-label', "(Sulit)");
             }
 
-            const mode = currentMode === 'campur' ? 
-                ['tambah', 'kurang', 'kali', 'bagi'][Math.floor(Math.random() * 4)] : currentMode;
+            const mode = currentMode === 'campur' ? ['tambah', 'kurang', 'kali', 'bagi'][Math.floor(Math.random() * 4)] : currentMode;
 
             switch(mode) {
                 case 'tambah':
@@ -408,7 +312,6 @@
         function nextQuestion() {
             currentQuestion = generateQuestion();
             setTxt('question-text', `${currentQuestion.a} ${currentQuestion.op} ${currentQuestion.b}`);
-            
             currentInput = "";
             const ansDisplay = document.getElementById('answer-display');
             if(ansDisplay) {
@@ -416,7 +319,6 @@
                 ansDisplay.classList.remove('text-white');
                 ansDisplay.classList.add('text-cyan-300');
             }
-            
             const container = document.getElementById('question-container');
             if(container) {
                 container.classList.remove('pop-in');
@@ -451,7 +353,6 @@
 
         function submitAnswer() {
             if (currentInput === "") return;
-
             const userAns = parseInt(currentInput);
             const container = document.getElementById('game-screen');
             
@@ -461,15 +362,9 @@
                 score += 10 + (streak * 2);
                 correctCount++;
                 streak++;
-                timeLeft += 10; 
-                
-                if (streak % 5 === 0) {
-                    level++;
-                    setTxt('feedback-msg', "LEVEL UP!");
-                } else {
-                    setTxt('feedback-msg', "");
-                }
-
+                timeLeft += 10; // Bonus Time
+                if (streak % 5 === 0) { level++; setTxt('feedback-msg', "LEVEL UP!"); } 
+                else { setTxt('feedback-msg', ""); }
                 if (container) {
                     container.classList.add('correct-flash');
                     setTimeout(() => container.classList.remove('correct-flash'), 500);
@@ -481,11 +376,9 @@
                 streak = 0;
                 wrongCount++;
                 setTxt('feedback-msg', "COBA LAGI...");
-                
                 const qBox = document.getElementById('question-container');
                 if(qBox) qBox.classList.add('shake');
                 if(container) container.classList.add('wrong-flash');
-                
                 setTimeout(() => {
                     if(qBox) qBox.classList.remove('shake');
                     if(container) container.classList.remove('wrong-flash');
@@ -513,7 +406,6 @@
             setTxt('streak-count', streak);
             setTxt('correct-display', correctCount);
             setTxt('wrong-display', wrongCount);
-            
             const maxStreak = 10;
             const percentage = Math.min((streak / maxStreak) * 100, 100);
             const bar = document.getElementById('streak-bar');
