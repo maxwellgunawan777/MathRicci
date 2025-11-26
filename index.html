@@ -90,28 +90,37 @@
     <div id="game-screen" class="hidden flex-col h-full w-full max-w-md mx-auto relative">
         
         <!-- Header Status -->
-        <div class="flex justify-between items-center p-4 pt-6">
+        <div class="flex justify-between items-center p-4 pt-6 gap-2">
             <button onclick="quitGame()" class="text-slate-400 hover:text-white text-2xl">🏠</button>
             
+            <!-- Stats Display (NEW) -->
+            <div class="flex flex-col items-center mx-auto bg-slate-800/50 px-4 py-1 rounded-xl border border-slate-700">
+                <div class="text-[10px] text-slate-400 font-bold tracking-wider uppercase mb-0.5">Status Misi</div>
+                <div class="flex gap-4 text-lg font-space">
+                    <span class="text-green-400 drop-shadow-sm">✔ <span id="correct-display">0</span></span>
+                    <span class="text-red-400 drop-shadow-sm">✖ <span id="wrong-display">0</span></span>
+                </div>
+            </div>
+
             <div class="flex flex-col items-center">
                 <div class="text-xs text-cyan-400 font-bold tracking-widest">SKOR</div>
                 <div id="score-display" class="text-2xl font-space">0</div>
             </div>
 
-            <div class="flex flex-col items-center">
+            <div class="flex flex-col items-center w-16">
                 <div class="text-xs text-red-400 font-bold tracking-widest">WAKTU</div>
-                <div id="timer-display" class="text-2xl font-space text-white">60</div>
+                <div id="timer-display" class="text-2xl font-space text-white">300</div>
             </div>
         </div>
 
         <!-- Progress Bar (Fuel) -->
         <div class="px-6 mb-2">
-            <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
+            <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700 relative">
                 <div id="streak-bar" class="bg-gradient-to-r from-yellow-400 to-orange-500 h-full w-0 transition-all duration-300"></div>
             </div>
-            <div class="flex justify-between text-[10px] text-slate-500 mt-1">
-                <span>COMBO: <span id="streak-count" class="text-yellow-400 font-bold">0</span>x</span>
-                <span>LEVEL <span id="level-display">1</span> <span id="difficulty-label" class="text-cyan-500 ml-1">(Mudah)</span></span>
+            <div class="flex justify-between text-[10px] text-slate-500 mt-1 font-bold">
+                <span>COMBO: <span id="streak-count" class="text-yellow-400 text-sm">0</span>x</span>
+                <span>LEVEL <span id="level-display" class="text-cyan-400 text-sm">1</span> <span id="difficulty-label" class="text-slate-400 font-normal ml-1">(Mudah)</span></span>
             </div>
         </div>
 
@@ -157,18 +166,24 @@
         <h2 class="text-3xl font-space text-white mb-1">MISI SELESAI!</h2>
         <p class="text-slate-400 text-sm mb-6">Laporan Penerbangan Anda:</p>
         
-        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 w-full max-w-xs mb-8">
-            <div class="flex justify-between items-center border-b border-slate-700 pb-2 mb-2">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 w-full max-w-xs mb-8 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3 mb-3">
                 <span class="text-slate-400">Skor Akhir</span>
-                <span id="final-score" class="text-2xl font-space text-cyan-400">0</span>
+                <span id="final-score" class="text-3xl font-space text-cyan-400">0</span>
             </div>
-            <div class="flex justify-between items-center">
-                <span class="text-slate-400">Soal Benar</span>
-                <span id="final-correct" class="text-xl font-bold text-green-400">0</span>
+            <div class="grid grid-cols-2 gap-4 pt-1">
+                <div class="flex flex-col items-center bg-slate-900/50 p-2 rounded-xl border border-slate-700">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">BENAR</span>
+                    <span id="final-correct" class="text-2xl font-bold text-green-400">0</span>
+                </div>
+                <div class="flex flex-col items-center bg-slate-900/50 p-2 rounded-xl border border-slate-700">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-widest mb-1">SALAH</span>
+                    <span id="final-wrong" class="text-2xl font-bold text-red-400">0</span>
+                </div>
             </div>
         </div>
 
-        <button onclick="showMenu()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-cyan-500/30 active:scale-95 transition-all">
+        <button onclick="showMenu()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-10 py-4 rounded-full font-bold shadow-lg shadow-cyan-500/30 active:scale-95 transition-all text-lg tracking-wide">
             MAIN LAGI
         </button>
     </div>
@@ -177,9 +192,10 @@
         let currentMode = 'tambah';
         let score = 0;
         let correctCount = 0;
+        let wrongCount = 0; // New var for wrong answers
         let streak = 0;
         let level = 1;
-        let timeLeft = 60;
+        let timeLeft = 300; // Updated initial time
         let timerInterval;
         let currentQuestion = {};
         let currentInput = "";
@@ -206,10 +222,7 @@
         if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = initVoice;
 
         function speak(text) {
-            // Jangan spam suara jika sedang bicara
-            // synth.cancel(); 
             const u = new SpeechSynthesisUtterance(text);
-            // Coba deteksi bahasa dari teks pujian
             if (['Good Job!', 'Awesome!', 'Great!', 'Super!'].includes(text) && voiceEng) {
                 u.voice = voiceEng;
                 u.lang = 'en-US';
@@ -217,8 +230,8 @@
                 u.voice = voiceIndo;
                 u.lang = 'id-ID';
             }
-            u.rate = 1.2; // Sedikit cepat agar semangat
-            u.pitch = 1.2; // Nada tinggi ceria
+            u.rate = 1.2; 
+            u.pitch = 1.2; 
             u.volume = 1.0;
             synth.speak(u);
         }
@@ -231,7 +244,6 @@
             gain.connect(audioCtx.destination);
             
             if (type === 'correct') {
-                // Nada 'Ting-Ting' Ceria
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
                 osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
@@ -261,13 +273,11 @@
             overlay.textContent = praiseText;
             overlay.classList.remove('hidden');
             overlay.classList.remove('praise-anim');
-            void overlay.offsetWidth; // Trigger reflow
+            void overlay.offsetWidth; 
             overlay.classList.add('praise-anim');
             
-            // Speak praise
             speak(praiseText);
             
-            // Hide after anim
             setTimeout(() => {
                 overlay.classList.add('hidden');
             }, 1000);
@@ -277,9 +287,10 @@
             currentMode = mode;
             score = 0;
             correctCount = 0;
+            wrongCount = 0; // Reset wrong count
             streak = 0;
             level = 1;
-            timeLeft = 60;
+            timeLeft = 300; // Updated time
             currentInput = "";
             
             document.getElementById('menu-screen').classList.add('hidden');
@@ -325,6 +336,7 @@
             clearInterval(timerInterval);
             document.getElementById('final-score').textContent = score;
             document.getElementById('final-correct').textContent = correctCount;
+            document.getElementById('final-wrong').textContent = wrongCount;
             document.getElementById('game-over-screen').classList.remove('hidden');
             confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             speak("Misi Selesai! Skor kamu " + score);
@@ -333,7 +345,6 @@
         function generateQuestion() {
             let a, b, op, ans, displayOp;
             
-            // LOGIC LEVEL (1-5: Single, 6-10: Double vs Single, 11+: Double vs Double)
             let rangeA_min = 1, rangeA_max = 9;
             let rangeB_min = 1, rangeB_max = 9;
 
@@ -420,19 +431,16 @@
             if (userAns === currentQuestion.ans) {
                 // BENAR
                 playSound('correct');
-                showPraise(); // Munculkan Pujian & Suara
+                showPraise();
                 
                 score += 10 + (streak * 2);
                 correctCount++;
                 streak++;
+                timeLeft += 10; // BONUS WAKTU +10
                 
-                // Konfeti kecil setiap jawaban benar
-                confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 }, colors: ['#4ade80', '#22d3ee'] });
-
                 if (streak % 5 === 0) {
                     level++;
-                    timeLeft += 5; 
-                    document.getElementById('feedback-msg').textContent = "LEVEL UP! +5 DETIK";
+                    document.getElementById('feedback-msg').textContent = "LEVEL UP!";
                 } else {
                     document.getElementById('feedback-msg').textContent = "";
                 }
@@ -440,11 +448,14 @@
                 container.classList.add('correct-flash');
                 setTimeout(() => container.classList.remove('correct-flash'), 500);
                 animateRocket();
-                setTimeout(nextQuestion, 800); // Delay sedikit agar sempat baca pujian
+                setTimeout(nextQuestion, 800); 
             } else {
                 // SALAH
                 playSound('wrong');
                 streak = 0;
+                wrongCount++; // Tambah counter salah
+                // Tidak ada pengurangan waktu
+                
                 document.getElementById('feedback-msg').textContent = "COBA LAGI...";
                 const qBox = document.getElementById('question-container');
                 qBox.classList.add('shake');
@@ -474,6 +485,8 @@
             document.getElementById('score-display').textContent = score;
             document.getElementById('level-display').textContent = level;
             document.getElementById('streak-count').textContent = streak;
+            document.getElementById('correct-display').textContent = correctCount;
+            document.getElementById('wrong-display').textContent = wrongCount;
             
             const maxStreak = 10;
             const percentage = Math.min((streak / maxStreak) * 100, 100);
