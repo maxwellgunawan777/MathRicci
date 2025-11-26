@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Misi Matematika Antariksa v2.3 (Keyboard Support)</title>
+    <title>Misi Matematika Antariksa v2.4 (Fixed Keyboard)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Varela+Round&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -11,16 +11,22 @@
         body { font-family: 'Varela Round', sans-serif; background-color: #0f172a; color: white; overflow: hidden; touch-action: manipulation; }
         .font-space { font-family: 'Righteous', cursive; }
         .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px; opacity: 0.3; z-index: -1; }
+        
+        /* Tombol Numpad */
         .btn-num { @apply bg-slate-700/50 border-2 border-slate-500 rounded-2xl text-2xl font-bold shadow-lg active:scale-95 transition-all backdrop-blur-sm hover:bg-slate-600 hover:border-cyan-400; height: 60px; }
-        /* Efek tekan tombol via keyboard */
-        .btn-active-key { transform: scale(0.95); background-color: #475569; border-color: #22d3ee; }
+        
+        /* Efek Visual saat tombol keyboard ditekan */
+        .btn-active-key { 
+            transform: scale(0.90) !important; 
+            background-color: #475569 !important; 
+            border-color: #22d3ee !important; 
+            box-shadow: 0 0 15px #22d3ee !important;
+        }
         
         .pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .shake { animation: shake 0.4s ease-in-out; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
-        .slide-up { animation: slideUp 0.5s ease-out; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .correct-flash { animation: flashGreen 0.5s; }
         @keyframes flashGreen { 0%, 100% { background-color: transparent; } 50% { background-color: rgba(34, 197, 94, 0.3); } }
         .wrong-flash { animation: flashRed 0.5s; }
@@ -33,7 +39,6 @@
 
     <div class="stars"></div>
     
-    <!-- Error Log Display (Hidden by default) -->
     <div id="error-log" class="hidden absolute top-2 left-2 right-2 z-50 bg-red-900/90 text-red-200 text-xs p-2 rounded border border-red-500 font-mono whitespace-pre-wrap pointer-events-none"></div>
 
     <!-- LAYAR MENU UTAMA -->
@@ -89,6 +94,7 @@
             <div id="feedback-msg" class="h-6 mt-2 text-sm font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500"></div>
         </div>
 
+        <!-- Numpad dengan ID yang Benar -->
         <div class="bg-slate-800/90 rounded-t-3xl p-5 pb-8 shadow-2xl border-t border-slate-700 slide-up">
             <div class="grid grid-cols-3 gap-3">
                 <button id="btn-1" onclick="inputNum(1)" class="btn-num">1</button>
@@ -127,11 +133,7 @@
 
     <script>
         window.onerror = function(message, source, lineno, colno, error) {
-            const errorLog = document.getElementById('error-log');
-            if (errorLog) {
-                errorLog.textContent = `Log: ${message} (Line: ${lineno})`;
-                console.error(message);
-            }
+            console.error(message);
             return true; 
         };
 
@@ -145,6 +147,7 @@
         let timerInterval;
         let currentQuestion = {};
         let currentInput = "";
+        
         let audioCtx;
         const synth = window.speechSynthesis;
         let voiceIndo = null;
@@ -208,9 +211,8 @@
             }
         }
 
-        // --- KEYBOARD LISTENER (NEW) ---
+        // --- KEYBOARD LISTENER (FIXED) ---
         document.addEventListener('keydown', function(event) {
-            // Cek apakah sedang di layar game
             const gameScreen = document.getElementById('game-screen');
             if (gameScreen.classList.contains('hidden')) return;
 
