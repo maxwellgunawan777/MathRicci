@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Misi Matematika Antariksa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Varela+Round&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Varela Round', sans-serif;
+            background-color: #0f172a; /* Dark Space Blue */
+            color: white;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+        .font-space { font-family: 'Righteous', cursive; }
+        
+        /* Background Stars Animation */
+        .stars {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(white 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.3;
+            z-index: -1;
+        }
+        
+        /* Numpad Styles */
+        .btn-num {
+            @apply bg-slate-700/50 border-2 border-slate-500 rounded-2xl text-2xl font-bold shadow-lg active:scale-95 transition-all backdrop-blur-sm hover:bg-slate-600 hover:border-cyan-400;
+            height: 60px;
+        }
+
+        /* Animations */
+        .pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .shake { animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+        .slide-up { animation: slideUp 0.5s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .correct-flash { animation: flashGreen 0.5s; }
+        @keyframes flashGreen { 0%, 100% { background-color: transparent; } 50% { background-color: rgba(34, 197, 94, 0.3); } }
+
+        .wrong-flash { animation: flashRed 0.5s; }
+        @keyframes flashRed { 0%, 100% { background-color: transparent; } 50% { background-color: rgba(239, 68, 68, 0.3); } }
+
+        /* Animasi Pujian */
+        .praise-anim { animation: praisePop 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards; }
+        @keyframes praisePop {
+            0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            50% { transform: scale(1.2) rotate(10deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col relative">
+
+    <div class="stars"></div>
+
+    <!-- LAYAR MENU UTAMA -->
+    <div id="menu-screen" class="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 bg-slate-900/90 backdrop-blur-md">
+        <div class="text-6xl mb-4 animate-bounce">🚀</div>
+        <h1 class="text-4xl text-center font-space text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2 drop-shadow-lg">MISI ANTARIKSA</h1>
+        <p class="text-slate-400 text-sm mb-8 text-center">Bantu kapten mengisi bahan bakar dengan menjawab soal matematika!</p>
+        
+        <div class="grid grid-cols-2 gap-4 w-full max-w-xs">
+            <button onclick="startGame('tambah')" class="bg-blue-600 hover:bg-blue-500 p-4 rounded-2xl font-bold shadow-blue-900/50 shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 transition-all">
+                <div class="text-2xl">➕</div> Penjumlahan
+            </button>
+            <button onclick="startGame('kurang')" class="bg-orange-600 hover:bg-orange-500 p-4 rounded-2xl font-bold shadow-orange-900/50 shadow-lg border-b-4 border-orange-800 active:border-b-0 active:translate-y-1 transition-all">
+                <div class="text-2xl">➖</div> Pengurangan
+            </button>
+            <button onclick="startGame('kali')" class="bg-purple-600 hover:bg-purple-500 p-4 rounded-2xl font-bold shadow-purple-900/50 shadow-lg border-b-4 border-purple-800 active:border-b-0 active:translate-y-1 transition-all">
+                <div class="text-2xl">✖️</div> Perkalian
+            </button>
+            <button onclick="startGame('bagi')" class="bg-pink-600 hover:bg-pink-500 p-4 rounded-2xl font-bold shadow-pink-900/50 shadow-lg border-b-4 border-pink-800 active:border-b-0 active:translate-y-1 transition-all">
+                <div class="text-2xl">➗</div> Pembagian
+            </button>
+            <button onclick="startGame('campur')" class="col-span-2 bg-emerald-600 hover:bg-emerald-500 p-4 rounded-2xl font-bold shadow-emerald-900/50 shadow-lg border-b-4 border-emerald-800 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center gap-2">
+                <span class="text-2xl">🎲</span> TANTANGAN ACAK
+            </button>
+        </div>
+    </div>
+
+    <!-- LAYAR GAME -->
+    <div id="game-screen" class="hidden flex-col h-full w-full max-w-md mx-auto relative">
+        
+        <!-- Header Status -->
+        <div class="flex justify-between items-center p-4 pt-6">
+            <button onclick="quitGame()" class="text-slate-400 hover:text-white text-2xl">🏠</button>
+            
+            <div class="flex flex-col items-center">
+                <div class="text-xs text-cyan-400 font-bold tracking-widest">SKOR</div>
+                <div id="score-display" class="text-2xl font-space">0</div>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <div class="text-xs text-red-400 font-bold tracking-widest">WAKTU</div>
+                <div id="timer-display" class="text-2xl font-space text-white">60</div>
+            </div>
+        </div>
+
+        <!-- Progress Bar (Fuel) -->
+        <div class="px-6 mb-2">
+            <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
+                <div id="streak-bar" class="bg-gradient-to-r from-yellow-400 to-orange-500 h-full w-0 transition-all duration-300"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                <span>COMBO: <span id="streak-count" class="text-yellow-400 font-bold">0</span>x</span>
+                <span>LEVEL <span id="level-display">1</span> <span id="difficulty-label" class="text-cyan-500 ml-1">(Mudah)</span></span>
+            </div>
+        </div>
+
+        <!-- Area Soal -->
+        <div class="flex-grow flex flex-col items-center justify-center py-4 relative">
+            <!-- Praise Overlay (Muncul saat benar) -->
+            <div id="praise-overlay" class="hidden absolute z-10 text-4xl font-space text-yellow-300 drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] praise-anim text-center w-full pointer-events-none top-10">HEBAT!</div>
+
+            <div id="question-container" class="bg-slate-800/80 border-2 border-cyan-500/30 p-6 rounded-3xl w-4/5 text-center shadow-[0_0_30px_rgba(6,182,212,0.15)] backdrop-blur-md pop-in relative">
+                <!-- Animasi Roket Kecil kalau benar -->
+                <div id="rocket-anim" class="absolute -right-8 bottom-0 text-4xl opacity-0 transition-all duration-500">🚀</div>
+                
+                <div id="question-text" class="text-5xl font-space text-white tracking-wide mb-2">?</div>
+                <div class="w-full h-1 bg-slate-700 my-4"></div>
+                <!-- Tempat Jawaban -->
+                <div id="answer-display" class="text-5xl font-space text-cyan-300 h-14 min-w-[100px] border-b-4 border-dashed border-slate-600 flex items-center justify-center"></div>
+            </div>
+            <div id="feedback-msg" class="h-6 mt-2 text-sm font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500"></div>
+        </div>
+
+        <!-- Numpad -->
+        <div class="bg-slate-800/90 rounded-t-3xl p-5 pb-8 shadow-2xl border-t border-slate-700 slide-up">
+            <div class="grid grid-cols-3 gap-3">
+                <button onclick="inputNum(1)" class="btn-num">1</button>
+                <button onclick="inputNum(2)" class="btn-num">2</button>
+                <button onclick="inputNum(3)" class="btn-num">3</button>
+                <button onclick="inputNum(4)" class="btn-num">4</button>
+                <button onclick="inputNum(5)" class="btn-num">5</button>
+                <button onclick="inputNum(6)" class="btn-num">6</button>
+                <button onclick="inputNum(7)" class="btn-num">7</button>
+                <button onclick="inputNum(8)" class="btn-num">8</button>
+                <button onclick="inputNum(9)" class="btn-num">9</button>
+                <button onclick="clearEntry()" class="btn-num bg-red-900/50 border-red-800 text-red-300 hover:bg-red-800">C</button>
+                <button onclick="inputNum(0)" class="btn-num">0</button>
+                <button onclick="submitAnswer()" class="btn-num bg-green-600 border-green-500 text-white hover:bg-green-500 shadow-green-900/50">⏎</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LAYAR GAME OVER -->
+    <div id="game-over-screen" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center p-6 bg-slate-900/95 backdrop-blur-xl text-center fade-in">
+        <div class="text-6xl mb-2">🏆</div>
+        <h2 class="text-3xl font-space text-white mb-1">MISI SELESAI!</h2>
+        <p class="text-slate-400 text-sm mb-6">Laporan Penerbangan Anda:</p>
+        
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 w-full max-w-xs mb-8">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-2 mb-2">
+                <span class="text-slate-400">Skor Akhir</span>
+                <span id="final-score" class="text-2xl font-space text-cyan-400">0</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400">Soal Benar</span>
+                <span id="final-correct" class="text-xl font-bold text-green-400">0</span>
+            </div>
+        </div>
+
+        <button onclick="showMenu()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-cyan-500/30 active:scale-95 transition-all">
+            MAIN LAGI
+        </button>
+    </div>
+
+    <script>
+        let currentMode = 'tambah';
+        let score = 0;
+        let correctCount = 0;
+        let streak = 0;
+        let level = 1;
+        let timeLeft = 60;
+        let timerInterval;
+        let currentQuestion = {};
+        let currentInput = "";
+        
+        // Daftar Kata Pujian
+        const praises = [
+            "HEBAT!", "LUAR BIASA!", "MANTAP!", "KEREN!", 
+            "PINTAR!", "GOOD JOB!", "AWESOME!", "GREAT!", 
+            "WOW!", "SUPER!", "JAGOAN!"
+        ];
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const synth = window.speechSynthesis;
+
+        // Init voice for speech (pujian)
+        let voiceIndo = null;
+        let voiceEng = null;
+        function initVoice() {
+            const voices = synth.getVoices();
+            voiceIndo = voices.find(v => v.lang.includes('id-ID') || v.lang.includes('ind'));
+            voiceEng = voices.find(v => v.lang.includes('en-US') || v.lang.includes('en-GB'));
+        }
+        initVoice();
+        if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = initVoice;
+
+        function speak(text) {
+            // Jangan spam suara jika sedang bicara
+            // synth.cancel(); 
+            const u = new SpeechSynthesisUtterance(text);
+            // Coba deteksi bahasa dari teks pujian
+            if (['Good Job!', 'Awesome!', 'Great!', 'Super!'].includes(text) && voiceEng) {
+                u.voice = voiceEng;
+                u.lang = 'en-US';
+            } else if (voiceIndo) {
+                u.voice = voiceIndo;
+                u.lang = 'id-ID';
+            }
+            u.rate = 1.2; // Sedikit cepat agar semangat
+            u.pitch = 1.2; // Nada tinggi ceria
+            u.volume = 1.0;
+            synth.speak(u);
+        }
+        
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            if (type === 'correct') {
+                // Nada 'Ting-Ting' Ceria
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+            }
+        }
+
+        function showPraise() {
+            const praiseText = praises[Math.floor(Math.random() * praises.length)];
+            const overlay = document.getElementById('praise-overlay');
+            
+            overlay.textContent = praiseText;
+            overlay.classList.remove('hidden');
+            overlay.classList.remove('praise-anim');
+            void overlay.offsetWidth; // Trigger reflow
+            overlay.classList.add('praise-anim');
+            
+            // Speak praise
+            speak(praiseText);
+            
+            // Hide after anim
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 1000);
+        }
+
+        function startGame(mode) {
+            currentMode = mode;
+            score = 0;
+            correctCount = 0;
+            streak = 0;
+            level = 1;
+            timeLeft = 60;
+            currentInput = "";
+            
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('flex');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            
+            updateUI();
+            nextQuestion();
+            startTimer();
+        }
+
+        function showMenu() {
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('flex');
+            document.getElementById('menu-screen').classList.remove('hidden');
+        }
+
+        function quitGame() {
+            clearInterval(timerInterval);
+            showMenu();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer-display').textContent = timeLeft;
+                if (timeLeft <= 10) {
+                    document.getElementById('timer-display').classList.add('text-red-500', 'animate-pulse');
+                } else {
+                    document.getElementById('timer-display').classList.remove('text-red-500', 'animate-pulse');
+                }
+                
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-correct').textContent = correctCount;
+            document.getElementById('game-over-screen').classList.remove('hidden');
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            speak("Misi Selesai! Skor kamu " + score);
+        }
+
+        function generateQuestion() {
+            let a, b, op, ans, displayOp;
+            
+            // LOGIC LEVEL (1-5: Single, 6-10: Double vs Single, 11+: Double vs Double)
+            let rangeA_min = 1, rangeA_max = 9;
+            let rangeB_min = 1, rangeB_max = 9;
+
+            if (level <= 5) {
+                rangeA_min = 1; rangeA_max = 9;
+                rangeB_min = 1; rangeB_max = 9;
+                document.getElementById('difficulty-label').textContent = "(Mudah)";
+            } else if (level <= 10) {
+                rangeA_min = 10; rangeA_max = 50;
+                rangeB_min = 2; rangeB_max = 9;
+                document.getElementById('difficulty-label').textContent = "(Sedang)";
+            } else {
+                rangeA_min = 10; rangeA_max = 99;
+                rangeB_min = 10; rangeB_max = 99;
+                document.getElementById('difficulty-label').textContent = "(Sulit)";
+            }
+
+            const mode = currentMode === 'campur' ? 
+                ['tambah', 'kurang', 'kali', 'bagi'][Math.floor(Math.random() * 4)] : currentMode;
+
+            switch(mode) {
+                case 'tambah':
+                    a = Math.floor(Math.random() * (rangeA_max - rangeA_min + 1)) + rangeA_min;
+                    b = Math.floor(Math.random() * (rangeB_max - rangeB_min + 1)) + rangeB_min;
+                    ans = a + b; displayOp = '+'; break;
+                case 'kurang':
+                    a = Math.floor(Math.random() * (rangeA_max - rangeA_min + 1)) + rangeA_min;
+                    b = Math.floor(Math.random() * (rangeB_max - rangeB_min + 1)) + rangeB_min;
+                    if (a < b) [a, b] = [b, a]; 
+                    ans = a - b; displayOp = '-'; break;
+                case 'kali':
+                    if (level > 10) { rangeA_max = 20; rangeB_max = 20; } 
+                    a = Math.floor(Math.random() * (rangeA_max - rangeA_min + 1)) + rangeA_min;
+                    b = Math.floor(Math.random() * (rangeB_max - rangeB_min + 1)) + rangeB_min;
+                    ans = a * b; displayOp = '×'; break;
+                case 'bagi':
+                    let divisor = Math.floor(Math.random() * (rangeB_max - rangeB_min + 1)) + rangeB_min;
+                    let quotient = Math.floor(Math.random() * 9) + 1; 
+                    if (level > 10) quotient = Math.floor(Math.random() * 12) + 2;
+                    b = divisor; ans = quotient; a = b * ans; displayOp = '÷'; break;
+            }
+
+            return { a, b, op: displayOp, ans };
+        }
+
+        function nextQuestion() {
+            currentQuestion = generateQuestion();
+            document.getElementById('question-text').textContent = `${currentQuestion.a} ${currentQuestion.op} ${currentQuestion.b}`;
+            currentInput = "";
+            document.getElementById('answer-display').textContent = "?";
+            document.getElementById('answer-display').classList.remove('text-white');
+            document.getElementById('answer-display').classList.add('text-cyan-300');
+            
+            const container = document.getElementById('question-container');
+            container.classList.remove('pop-in');
+            void container.offsetWidth;
+            container.classList.add('pop-in');
+        }
+
+        function inputNum(num) {
+            if (currentInput.length < 4) {
+                currentInput += num;
+                document.getElementById('answer-display').textContent = currentInput;
+                document.getElementById('answer-display').classList.add('text-white');
+                document.getElementById('answer-display').classList.remove('text-cyan-300');
+                playSound('click');
+            }
+        }
+
+        function clearEntry() {
+            currentInput = "";
+            document.getElementById('answer-display').textContent = "?";
+            document.getElementById('answer-display').classList.remove('text-white');
+            document.getElementById('answer-display').classList.add('text-cyan-300');
+            playSound('click');
+        }
+
+        function submitAnswer() {
+            if (currentInput === "") return;
+
+            const userAns = parseInt(currentInput);
+            const container = document.getElementById('game-screen');
+            
+            if (userAns === currentQuestion.ans) {
+                // BENAR
+                playSound('correct');
+                showPraise(); // Munculkan Pujian & Suara
+                
+                score += 10 + (streak * 2);
+                correctCount++;
+                streak++;
+                
+                // Konfeti kecil setiap jawaban benar
+                confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 }, colors: ['#4ade80', '#22d3ee'] });
+
+                if (streak % 5 === 0) {
+                    level++;
+                    timeLeft += 5; 
+                    document.getElementById('feedback-msg').textContent = "LEVEL UP! +5 DETIK";
+                } else {
+                    document.getElementById('feedback-msg').textContent = "";
+                }
+
+                container.classList.add('correct-flash');
+                setTimeout(() => container.classList.remove('correct-flash'), 500);
+                animateRocket();
+                setTimeout(nextQuestion, 800); // Delay sedikit agar sempat baca pujian
+            } else {
+                // SALAH
+                playSound('wrong');
+                streak = 0;
+                document.getElementById('feedback-msg').textContent = "COBA LAGI...";
+                const qBox = document.getElementById('question-container');
+                qBox.classList.add('shake');
+                container.classList.add('wrong-flash');
+                
+                setTimeout(() => {
+                    qBox.classList.remove('shake');
+                    container.classList.remove('wrong-flash');
+                    currentInput = "";
+                    document.getElementById('answer-display').textContent = "?";
+                }, 500);
+            }
+            updateUI();
+        }
+
+        function animateRocket() {
+            const rocket = document.getElementById('rocket-anim');
+            rocket.style.opacity = 1;
+            rocket.style.transform = "translateY(-100px) rotate(45deg)";
+            setTimeout(() => {
+                rocket.style.opacity = 0;
+                rocket.style.transform = "translateY(0) rotate(0deg)";
+            }, 500);
+        }
+
+        function updateUI() {
+            document.getElementById('score-display').textContent = score;
+            document.getElementById('level-display').textContent = level;
+            document.getElementById('streak-count').textContent = streak;
+            
+            const maxStreak = 10;
+            const percentage = Math.min((streak / maxStreak) * 100, 100);
+            document.getElementById('streak-bar').style.width = `${percentage}%`;
+        }
+    </script>
+</body>
+</html>
