@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Misi Matematika Antariksa v2.2 (Stabil)</title>
+    <title>Misi Matematika Antariksa v2.3 (Keyboard Support)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Varela+Round&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -12,6 +12,9 @@
         .font-space { font-family: 'Righteous', cursive; }
         .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px; opacity: 0.3; z-index: -1; }
         .btn-num { @apply bg-slate-700/50 border-2 border-slate-500 rounded-2xl text-2xl font-bold shadow-lg active:scale-95 transition-all backdrop-blur-sm hover:bg-slate-600 hover:border-cyan-400; height: 60px; }
+        /* Efek tekan tombol via keyboard */
+        .btn-active-key { transform: scale(0.95); background-color: #475569; border-color: #22d3ee; }
+        
         .pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .shake { animation: shake 0.4s ease-in-out; }
@@ -37,7 +40,7 @@
     <div id="menu-screen" class="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 bg-slate-900/90 backdrop-blur-md">
         <div class="text-6xl mb-4 animate-bounce">🚀</div>
         <h1 class="text-4xl text-center font-space text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2 drop-shadow-lg">MISI ANTARIKSA</h1>
-        <p class="text-slate-400 text-sm mb-8 text-center">Siap meluncur kapten? Pilih misimu:</p>
+        <p class="text-slate-400 text-sm mb-8 text-center">Bantu kapten mengisi bahan bakar dengan menjawab soal matematika!</p>
         
         <div class="grid grid-cols-2 gap-4 w-full max-w-xs">
             <button onclick="startGame('tambah')" class="bg-blue-600 hover:bg-blue-500 p-4 rounded-2xl font-bold shadow-blue-900/50 shadow-lg border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 transition-all"><div class="text-2xl">➕</div> Penjumlahan</button>
@@ -88,12 +91,18 @@
 
         <div class="bg-slate-800/90 rounded-t-3xl p-5 pb-8 shadow-2xl border-t border-slate-700 slide-up">
             <div class="grid grid-cols-3 gap-3">
-                <button onclick="inputNum(1)" class="btn-num">1</button><button onclick="inputNum(2)" class="btn-num">2</button><button onclick="inputNum(3)" class="btn-num">3</button>
-                <button onclick="inputNum(4)" class="btn-num">4</button><button onclick="inputNum(5)" class="btn-num">5</button><button onclick="inputNum(6)" class="btn-num">6</button>
-                <button onclick="inputNum(7)" class="btn-num">7</button><button onclick="inputNum(8)" class="btn-num">8</button><button onclick="inputNum(9)" class="btn-num">9</button>
-                <button onclick="clearEntry()" class="btn-num bg-red-900/50 border-red-800 text-red-300 hover:bg-red-800">C</button>
-                <button onclick="inputNum(0)" class="btn-num">0</button>
-                <button onclick="submitAnswer()" class="btn-num bg-green-600 border-green-500 text-white hover:bg-green-500 shadow-green-900/50">⏎</button>
+                <button id="btn-1" onclick="inputNum(1)" class="btn-num">1</button>
+                <button id="btn-2" onclick="inputNum(2)" class="btn-num">2</button>
+                <button id="btn-3" onclick="inputNum(3)" class="btn-num">3</button>
+                <button id="btn-4" onclick="inputNum(4)" class="btn-num">4</button>
+                <button id="btn-5" onclick="inputNum(5)" class="btn-num">5</button>
+                <button id="btn-6" onclick="inputNum(6)" class="btn-num">6</button>
+                <button id="btn-7" onclick="inputNum(7)" class="btn-num">7</button>
+                <button id="btn-8" onclick="inputNum(8)" class="btn-num">8</button>
+                <button id="btn-9" onclick="inputNum(9)" class="btn-num">9</button>
+                <button id="btn-c" onclick="clearEntry()" class="btn-num bg-red-900/50 border-red-800 text-red-300 hover:bg-red-800">C</button>
+                <button id="btn-0" onclick="inputNum(0)" class="btn-num">0</button>
+                <button id="btn-enter" onclick="submitAnswer()" class="btn-num bg-green-600 border-green-500 text-white hover:bg-green-500 shadow-green-900/50">⏎</button>
             </div>
         </div>
     </div>
@@ -117,26 +126,18 @@
     </div>
 
     <script>
-        // Global Error Handler (Safe Mode)
         window.onerror = function(message, source, lineno, colno, error) {
             const errorLog = document.getElementById('error-log');
             if (errorLog) {
                 errorLog.textContent = `Log: ${message} (Line: ${lineno})`;
-                // Tidak menampilkan di layar user agar tidak mengganggu, hanya di console/log tersembunyi
                 console.error(message);
             }
-            return true; // Prevent default crash
+            return true; 
         };
 
-        // --- HELPER AMAN UNTUK UPDATE UI ---
-        // Fungsi ini memastikan elemen ada sebelum diubah, mencegah error "null"
         function setTxt(id, text) {
             const el = document.getElementById(id);
-            if (el) {
-                el.textContent = text;
-            } else {
-                console.warn(`Elemen dengan ID '${id}' tidak ditemukan.`);
-            }
+            if (el) el.textContent = text;
         }
 
         let currentMode = 'tambah';
@@ -150,7 +151,6 @@
         let voiceEng = null;
         const praises = ["HEBAT!", "LUAR BIASA!", "MANTAP!", "KEREN!", "PINTAR!", "GOOD JOB!", "WOW!", "SUPER!"];
 
-        // Init Audio (Lazy Load)
         function initAudio() {
             try {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -208,6 +208,32 @@
             }
         }
 
+        // --- KEYBOARD LISTENER (NEW) ---
+        document.addEventListener('keydown', function(event) {
+            // Cek apakah sedang di layar game
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen.classList.contains('hidden')) return;
+
+            if (event.key >= '0' && event.key <= '9') {
+                inputNum(parseInt(event.key));
+                simulateBtnPress('btn-' + event.key);
+            } else if (event.key === 'Enter') {
+                submitAnswer();
+                simulateBtnPress('btn-enter');
+            } else if (event.key === 'Backspace' || event.key === 'Delete' || event.key === 'Escape') {
+                clearEntry();
+                simulateBtnPress('btn-c');
+            }
+        });
+
+        function simulateBtnPress(btnId) {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.classList.add('btn-active-key');
+                setTimeout(() => btn.classList.remove('btn-active-key'), 150);
+            }
+        }
+
         function startGame(mode) {
             try { initAudio(); } catch (e) {}
             currentMode = mode; score = 0; correctCount = 0; wrongCount = 0; streak = 0; level = 1; timeLeft = 300; currentInput = "";
@@ -218,15 +244,12 @@
             gameScreen.classList.add('flex');
             document.getElementById('game-over-screen').classList.add('hidden');
             
-            // Reset UI elements specifically to avoid glitches
             setTxt('timer-display', timeLeft);
             setTxt('score-display', "0");
             
-            // Generate first question BEFORE starting timer
             nextQuestion(); 
             updateUI();
             
-            // Clear any existing timer first
             if (timerInterval) clearInterval(timerInterval);
             startTimer();
         }
@@ -362,7 +385,7 @@
                 score += 10 + (streak * 2);
                 correctCount++;
                 streak++;
-                timeLeft += 10; // Bonus Time
+                timeLeft += 10; 
                 if (streak % 5 === 0) { level++; setTxt('feedback-msg', "LEVEL UP!"); } 
                 else { setTxt('feedback-msg', ""); }
                 if (container) {
